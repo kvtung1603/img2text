@@ -1,19 +1,7 @@
 import numpy as np
 
+
 def compute_accuracy(ground_truth, predictions, mode='full_sequence'):
-    """
-    Computes accuracy
-    :param ground_truth:
-    :param predictions:
-    :param display: Whether to print values to stdout
-    :param mode: if 'per_char' is selected then
-                 single_label_accuracy = correct_predicted_char_nums_of_single_sample / single_label_char_nums
-                 avg_label_accuracy = sum(single_label_accuracy) / label_nums
-                 if 'full_sequence' is selected then
-                 single_label_accuracy = 1 if the prediction result is exactly the same as label else 0
-                 avg_label_accuracy = sum(single_label_accuracy) / label_nums
-    :return: avg_label_accuracy
-    """
     if mode == 'per_char':
 
         accuracy = []
