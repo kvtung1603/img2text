@@ -1,3 +1,4 @@
+
 class Vocab():
     def __init__(self, chars):
         self.pad = 0
