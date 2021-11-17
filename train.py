@@ -1,6 +1,7 @@
 import os
 import time
 
+import numpy as np
 import torch
 from torch.optim import SGD
 from torch.optim.lr_scheduler import OneCycleLR
@@ -10,6 +11,7 @@ from Vocab import Vocab
 from dataset.aug import ImgAugTransform
 from dataset.dataloader import OCRdataset, ClusterRandomSampler, Collator
 from loss.labelsmoothingloss import LabelSmoothingLoss
+from metrics import compute_accuracy
 from model.OCR import OCR
 
 
@@ -35,18 +37,17 @@ class Train():
         self.train_gen = self.data_gen('train_{}'.format(self.dataset_name),
                                        self.data_root, self.train_annotation, self.masked_language_model,
                                        transform=self.transforms)
-        if self.valid_annotation:
-            self.valid_gen = self.data_gen('valid_{}'.format(self.dataset_name),
-                                           self.data_root, self.valid_annotation, masked_language_model=False)
 
+        self.valid_gen = self.data_gen('valid_{}'.format(self.dataset_name),
+                                        self.data_root, self.valid_annotation, masked_language_model=False)
 
     def make_dataloader(self, outputPath, root_dir, annotation_path, masked_language_model=True, transform=None):
 
         dataset = OCRdataset(outputPath, root_dir, annotation_path, self.vocab, transform=transform)
         sampler = ClusterRandomSampler(dataset, self.batch_size, True)
         collate_fn = Collator(masked_language_model)
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, sampler=sampler, num_workers=3, collate_fn=collate_fn, pin_memory=True)
 
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, sampler=sampler, num_workers=3, collate_fn=collate_fn, pin_memory=True)
         return dataloader
 
     def train(self, ):
@@ -104,6 +105,48 @@ class Train():
                     best_acc = acc_full_seq
 
 
+    def validate(self):
+
+        self.model.eval()
+        self.model.to(self.device)
+
+        total_loss = []
+
+        with torch.no_grad():
+            for step, batch in enumerate(self.valid_gen):
+                img = batch['img'].to(self.device)
+                tgt_input = batch['tgt_input'].to(self.device)
+                tgt_output = batch['tgt_output'].to(self.device)
+                tgt_padding_mask = batch['tgt_padding_mask'].to(self.device)
+
+                output = self.model(img, tgt_input, tgt_padding_mask)
+
+                output = output.flatten(0, 1)
+                tgt_output = tgt_output.flatten()
+
+                loss = self.criterion(output, tgt_output)
+
+                total_loss.append(loss.item())
+
+                del output
+                del loss
+
+        total_loss = np.mean(total_loss)
+        self.model.train()
+        return total_loss
+
+
+    def precision(self, sample=None):
+
+        pred_sents, actual_sents, _, _ = self.predict(sample=sample)
+
+        acc_full_seq = compute_accuracy(actual_sents, pred_sents, mode='full_sequence')
+        acc_per_char = compute_accuracy(actual_sents, pred_sents, mode='per_char')
+
+        return acc_full_seq, acc_per_char
+
+
+
     def step(self, batch):
 
         self.model.train()
@@ -138,7 +181,6 @@ class Train():
 
     def save_weights(self, filename):
         os.makedirs(filename, exist_ok=True)
-
         torch.save(self.model.state_dict(), filename)
 
     def save_checkpoint(self, filename):
@@ -156,4 +198,3 @@ class Train():
         self.optimizer.load_state_dict(state_dict['optimizer'])
         self.iter = state_dict['iter']
         self.train_losses = state_dict['train_losses']
-
