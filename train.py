@@ -45,7 +45,7 @@ class Train():
         dataset = OCRdataset(outputPath, root_dir, annotation_path, self.vocab, transform=transform)
         sampler = ClusterRandomSampler(dataset, self.batch_size, True)
         collate_fn = Collator(masked_language_model)
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, sampler=sampler, collate_fn=collate_fn, shuffle=True)
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, sampler=sampler, num_workers=3, collate_fn=collate_fn, pin_memory=True)
 
         return dataloader
 
