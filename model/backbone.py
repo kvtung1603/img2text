@@ -25,13 +25,11 @@ class VGG(nn.Module):
         x = x.permute(-1, 0, 1)
         return x
 
+    def freeze(model):
+        for name, param in model.features.named_parameters():
+            if name != 'conv1':
+                param.requires_grad = False
 
-def freeze(model):
-    for name, param in model.features.named_parameters():
-        if name != 'conv1':
-            param.requires_grad = False
-
-
-def unfreeze(model):
-    for param in model.features.parameters():
-        param.requires_grad = True
+    def unfreeze(model):
+        for param in model.features.parameters():
+            param.requires_grad = True
