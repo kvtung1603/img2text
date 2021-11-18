@@ -266,7 +266,8 @@ class Train():
                 self.logger.log(info)
             if acc_full_seq > best_acc:
                 best_acc = acc_full_seq
-                self.save_checkpoint(f"./checkpoint{.2f}.pth".format(acc_full_seq))
+                filename = "checkpoint{:.0f}.pth".format(acc_full_seq)
+                self.save_checkpoint(filename)
 
 
 
