@@ -4,4 +4,7 @@ chars = 'aAàÀảẢãÃáÁạẠăĂằẰẳẲẵẴắẮặẶâÂầẦ�
 
 vocab = Vocab(chars)
 
-print(vocab.encode("fdagdag dagdfsgad"))
+
+a = 0.5352
+filename = "checkpoint{:.0f}.pth".format(a)
+print(filename)

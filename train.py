@@ -18,7 +18,7 @@ from utils import translate
 
 
 class Train():
-    def __init__(self, chars, dataset_name, data_root, train_annotation, valid_annotation, checkpoint, data_aug = ImgAugTransform()):
+    def __init__(self, chars, dataset_name, data_root, train_annotation, valid_annotation, checkpoint=None, data_aug = ImgAugTransform()):
         self.vocab = Vocab(chars)
         self.model = OCR(len(self.vocab))
 
