@@ -20,16 +20,16 @@ class VGG(nn.Module):
         x = self.dropout(x)
         x = self.conv1(x)
 
-        x = x.tranpose(-1, -2)
+        x = x.transpose(-1, -2)
         x = x.flatten(2)
         x = x.permute(-1, 0, 1)
         return x
 
-    def freeze(model):
-        for name, param in model.features.named_parameters():
+    def freeze(self):
+        for name, param in self.model.features.named_parameters():
             if name != 'conv1':
                 param.requires_grad = False
 
-    def unfreeze(model):
-        for param in model.features.parameters():
+    def unfreeze(self):
+        for param in self.model.features.parameters():
             param.requires_grad = True

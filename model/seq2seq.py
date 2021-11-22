@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 class Encoder(nn.Module):
     def __init__(self, emb_dim, enc_hid_dim, dec_hid_dim, dropout):
-        super().__init__()
+        super(Encoder, self).__init__()
 
         self.rnn = nn.GRU(emb_dim, enc_hid_dim, bidirectional=True)
         self.fc = nn.Linear(enc_hid_dim * 2, dec_hid_dim)

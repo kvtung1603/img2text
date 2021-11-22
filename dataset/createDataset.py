@@ -4,7 +4,7 @@ import sys
 import cv2
 import lmdb
 import numpy as np
-import tqdm
+from tqdm import tqdm
 
 
 def checkImageIsValid(imageBin):
@@ -31,7 +31,7 @@ def writeCache(env, cache):
             txn.put(k.encode(), v)
 
 
-def createDataset(outputPath, root_dir, annotation_path):
+def create_dataset(outputPath, root_dir, annotation_path):
 
     annotation_path = os.path.join(root_dir, annotation_path)
     with open(annotation_path, 'r') as ann_file:

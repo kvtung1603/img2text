@@ -58,8 +58,9 @@ class Train():
         sampler = ClusterRandomSampler(dataset, self.batch_size, True)
         collate_fn = Collator(masked_language_model)
 
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, sampler=sampler, num_workers=3, collate_fn=collate_fn, pin_memory=True)
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, sampler=sampler, num_workers=3, collate_fn=collate_fn, pin_memory=True)
         return dataloader
+
 
     def train(self):
         if self.checkpoint is not None:
@@ -128,9 +129,9 @@ class Train():
                 img = batch['img'].to(self.device)
                 tgt_input = batch['tgt_input'].to(self.device)
                 tgt_output = batch['tgt_output'].to(self.device)
-                tgt_padding_mask = batch['tgt_padding_mask'].to(self.device)
 
-                output = self.model(img, tgt_input, tgt_padding_mask)
+
+                output = self.model(img, tgt_input)
 
                 output = output.flatten(0, 1)
                 tgt_output = tgt_output.flatten()
@@ -155,7 +156,6 @@ class Train():
             img = batch['img'].to(self.device)
             tgt_input = batch['tgt_input'].to(self.device)
             tgt_output = batch['tgt_output'].to(self.device)
-            tgt_padding_mask = batch['tgt_padding_mask'].to(self.device)
 
             translated_sentence, prob = translate(img, self.model)
 
@@ -181,14 +181,13 @@ class Train():
     def step(self, batch):
         self.model.train()
         self.model.to(self.device)
-        img, tgt_input, tgt_output, tgt_padding_mask = batch['img'], batch['tgt_input'], batch['tgt_output'], batch['tgt_padding_mask']
+        img, tgt_input, tgt_output = batch['img'], batch['tgt_input'], batch['tgt_output']
 
         img = img.to(self.device)
         tgt_input = tgt_input.to(self.device)
         tgt_output = tgt_output.to(self.device)
-        tgt_padding_mask = tgt_padding_mask.to(self.device)
 
-        outputs = self.model(img, tgt_input, tgt_key_padding_mask=tgt_padding_mask)
+        outputs = self.model(img, tgt_input)
 
         outputs = outputs.view(-1, outputs.size(2)) #flatten(0, 1)
         tgt_output = tgt_output.view(-1) #flatten()
@@ -221,54 +220,5 @@ class Train():
         self.optimizer.load_state_dict(state_dict['optimizer'])
         self.iter = state_dict['iter']
         self.train_losses = state_dict['train_losses']
-
-
-    def train_v1(self):
-        best_acc = 0.0
-        self.model.train()
-        for i in range(self.num_epochs):
-            epoch_loss = 0.0
-            start = time.time()
-            for _, batch in enumerate(self.train_gen):
-
-                img, tgt_input, tgt_output, tgt_padding_mask = batch['img'], batch['tgt_input'], batch['tgt_output'], batch[
-                    'tgt_padding_mask']
-                img = img.to(self.device)
-                tgt_input = tgt_input.to(self.device)
-                tgt_padding_mask = tgt_padding_mask.to(self.device)
-                tgt_output = tgt_output.to(self.device)
-
-                self.optimizer.zero_grad()
-                outputs = self.model(img, tgt_input, tgt_padding_mask)
-                outputs = outputs.flatten(0,1)
-                tgt_output = tgt_output.flatten()
-
-                loss = self.criterion(outputs, tgt_output)
-                epoch_loss += loss
-
-                loss.backward()
-                self.optimizer.step()
-                self.scheduler.step()
-
-            train_time = time.time() - start
-            info = "epoch: {:d} - train loss: {:.3f} - lr {:.2e} - train time: {:.2f}".format(i, epoch_loss, self.optimizer.param_groups[0]['lr'], train_time)
-
-            print(info)
-            self.logger.log(info)
-
-            if i%5 == 0:
-                val_loss = self.validate()
-                acc_full_seq, acc_per_char = self.precision(self.metrics)
-                info = 'epoch: {:d} - valid loss: {:.3f} - acc full seq: {:.4f} - acc per char: {:.4f}'.format(
-                    i, val_loss, acc_full_seq, acc_per_char)
-
-                print(info)
-                self.logger.log(info)
-            if acc_full_seq > best_acc:
-                best_acc = acc_full_seq
-                filename = "checkpoint{:.0f}.pth".format(acc_full_seq)
-                self.save_checkpoint(filename)
-
-
 
 
